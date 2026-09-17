@@ -1,0 +1,31 @@
+﻿# ─── Python ───────────────────────────────
+__pycache__/
+*.py[cod]
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# ─── Django ───────────────────────────────
+*.log
+db.sqlite3
+db.sqlite3-journal
+/media/
+/staticfiles/
+
+# ─── Environment ──────────────────────────
+.env
+.env.local
+
+# ─── VS Code ──────────────────────────────
+.vscode/
+!.vscode/settings.json
+
+# ─── OS ───────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── IDEs ─────────────────────────────────
+.idea/
+*.swp
