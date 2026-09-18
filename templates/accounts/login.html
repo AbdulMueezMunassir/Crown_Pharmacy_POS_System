@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Crown Pharmacy</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .brand-font { font-family: 'Plus Jakarta Sans', sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen grid lg:grid-cols-2 bg-[#faf8ff]">
+
+  <!-- LEFT: Brand Panel -->
+  <div class="hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-[#00685f] to-[#008378] text-white">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-white/10 backdrop-blur flex items-center justify-center font-bold">Rx</div>
+      <div>
+        <div class="text-xl font-bold brand-font">Crown Pharmacy</div>
+        <div class="text-xs opacity-80">Inventory &amp; POS</div>
+      </div>
+    </div>
+
+    <div class="space-y-6 max-w-md">
+      <h1 class="text-4xl font-bold brand-font leading-tight">
+        Clinical-grade pharmacy management.
+      </h1>
+      <p class="text-sm opacity-90">
+        Precision FEFO tracking, real-time inventory, and NMRA-compliant dispensing workflows engineered for high-velocity Sri Lankan pharmacies.
+      </p>
+
+      <div class="grid grid-cols-3 gap-4 pt-4">
+        <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+          <div class="text-lg font-bold">100%</div>
+          <div class="text-[11px] opacity-80">FEFO Enforced</div>
+        </div>
+        <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+          <div class="text-lg font-bold">Active</div>
+          <div class="text-[11px] opacity-80">Batch Tracking</div>
+        </div>
+        <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+          <div class="text-lg font-bold">Yes</div>
+          <div class="text-[11px] opacity-80">NMRA Compliant</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-xs opacity-60">
+      © 2026 Crown Pharmacy (Pvt) Ltd • SL-COL-PH-8921
+    </div>
+  </div>
+
+  <!-- RIGHT: Login Form -->
+  <div class="flex items-center justify-center p-6">
+    <div class="w-full max-w-md space-y-6">
+      <div>
+        <h2 class="text-2xl font-bold brand-font text-[#131b2e]">Welcome back</h2>
+        <p class="text-sm text-[#3d4947] mt-1">Sign in to access your pharmacy dashboard.</p>
+      </div>
+
+      {% if form.errors %}
+        <div class="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-start gap-2">
+          <span class="material-symbols-outlined text-[18px]">error</span>
+          <span>Invalid username or password. Please try again.</span>
+        </div>
+      {% endif %}
+
+      {% if next %}
+        {% if user.is_authenticated %}
+          <div class="p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800">
+            Your account doesn't have access to this page. Please log in with a different account.
+          </div>
+        {% endif %}
+      {% endif %}
+
+      <form method="post" action="{% url 'accounts:login' %}" class="space-y-4">
+        {% csrf_token %}
+
+        <div>
+          <label for="id_username" class="block text-sm font-medium mb-1 text-[#131b2e]">Username or Email</label>
+          <input
+            type="text"
+            name="username"
+            id="id_username"
+            autofocus
+            autocomplete="username"
+            placeholder="admin or admin@crownrx.lk"
+            class="w-full h-10 px-3 text-sm bg-white border border-[#bcc9c6] rounded-lg outline-none focus:border-[#00685f] focus:ring-1 focus:ring-[#00685f] transition"
+            required>
+        </div>
+
+        <div>
+          <label for="id_password" class="block text-sm font-medium mb-1 text-[#131b2e]">Password</label>
+          <div class="relative">
+            <input
+              type="password"
+              name="password"
+              id="id_password"
+              autocomplete="current-password"
+              placeholder="••••••••"
+              class="w-full h-10 px-3 pr-10 text-sm bg-white border border-[#bcc9c6] rounded-lg outline-none focus:border-[#00685f] focus:ring-1 focus:ring-[#00685f] transition"
+              required>
+            <button type="button" onclick="togglePassword()" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#6d7a77] hover:text-[#131b2e]">
+              <span class="material-symbols-outlined text-[18px]" id="toggle-icon">visibility</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-sm">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="remember" class="rounded border-[#bcc9c6] text-[#00685f] focus:ring-[#00685f]">
+            <span class="text-[#3d4947]">Remember me</span>
+          </label>
+          <a href="#" class="text-[#00685f] hover:underline font-medium">Forgot password?</a>
+        </div>
+
+        <button type="submit"
+          class="w-full h-10 bg-[#00685f] hover:bg-[#008378] text-white font-semibold rounded-lg transition active:scale-[0.98] flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">login</span>
+          Sign in
+        </button>
+      </form>
+
+      <div class="text-center text-xs text-[#6d7a77]">
+        Need access? Contact your pharmacy administrator.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function togglePassword() {
+      const pwd = document.getElementById('id_password');
+      const icon = document.getElementById('toggle-icon');
+      if (pwd.type === 'password') {
+        pwd.type = 'text';
+        icon.textContent = 'visibility_off';
+      } else {
+        pwd.type = 'password';
+        icon.textContent = 'visibility';
+      }
+    }
+  </script>
+</body>
+</html>

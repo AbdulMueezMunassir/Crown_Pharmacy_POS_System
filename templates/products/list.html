@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title %}Products — Crown Pharmacy{% endblock %}
+{% block page_title %}Products{% endblock %}
+
+{% block content %}
+
+<!-- Header row -->
+<div class="flex items-center justify-between mb-4">
+  <div>
+    <h1 class="text-2xl font-bold font-display">Product Directory</h1>
+    <p class="text-sm text-on-surface-variant">{{ total_count }} active products in catalog</p>
+  </div>
+  <a href="#" class="btn-primary">
+    <span class="material-symbols-outlined text-[18px]">add</span>
+    Add Product
+  </a>
+</div>
+
+<!-- Search & Filters -->
+<div class="card p-3 mb-4">
+  <form method="get" class="flex items-center gap-2 flex-wrap">
+    <div class="relative flex-1 min-w-[240px]">
+      <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+      <input type="text" name="q" value="{{ search }}" placeholder="Search name, generic, SKU, or barcode..." class="input-field pl-9">
+    </div>
+    <select name="category" class="input-field max-w-[200px]">
+      <option value="">All Categories</option>
+      {% for cat in categories %}
+        <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+      {% endfor %}
+    </select>
+    <select name="schedule" class="input-field max-w-[200px]">
+      <option value="">All Schedules</option>
+      {% for val, label in schedule_choices %}
+        <option value="{{ val }}" {% if request.GET.schedule == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-secondary">
+      <span class="material-symbols-outlined text-[18px]">filter_alt</span>
+      Filter
+    </button>
+    {% if search or request.GET.category or request.GET.schedule %}
+      <a href="{% url 'products:list' %}" class="btn-secondary">
+        <span class="material-symbols-outlined text-[18px]">close</span>
+        Clear
+      </a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Products table -->
+<div class="card overflow-hidden">
+  {% if page_obj %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-surface-container-low text-on-surface-variant">
+          <tr>
+            <th class="text-left px-4 py-2.5 font-semibold text-[11px] uppercase tracking-wider">SKU</th>
+            <th class="text-left px-4 py-2.5 font-semibold text-[11px] uppercase tracking-wider">Product</th>
+            <th class="text-left px-4 py-2.5 font-semibold text-[11px] uppercase tracking-wider">Category</th>
+            <th class="text-left px-4 py-2.5 font-semibold text-[11px] uppercase tracking-wider">Schedule</th>
+            <th class="text-right px-4 py-2.5 font-semibold text-[11px] uppercase tracking-wider">Stock</th>
+            <th class="text-right px-4 py-2.5 font-semibold text-[11px] uppercase tracking-wider">Selling</th>
+            <th class="text-center px-4 py-2.5 font-semibold text-[11px] uppercase tracking-wider">Status</th>
+            <th class="text-right px-4 py-2.5 font-semibold text-[11px] uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant">
+          {% for product in page_obj %}
+            <tr class="hover:bg-surface-container-low/60 transition">
+              <td class="px-4 py-3 font-mono text-xs text-primary font-medium">{{ product.sku }}</td>
+              <td class="px-4 py-3">
+                <div class="font-semibold">{{ product.name }}</div>
+                <div class="text-xs text-on-surface-variant">{{ product.generic_name|default:product.dosage_form }}</div>
+              </td>
+              <td class="px-4 py-3 text-on-surface-variant">{{ product.category.name|default:"—" }}</td>
+              <td class="px-4 py-3">
+                <span class="badge-info">{{ product.get_drug_schedule_display }}</span>
+              </td>
+              <td class="px-4 py-3 text-right font-mono">{{ product.total_stock }}</td>
+              <td class="px-4 py-3 text-right font-mono font-semibold">LKR {{ product.selling_price|floatformat:2 }}</td>
+              <td class="px-4 py-3 text-center">
+                {% if product.stock_status == 'in_stock' %}
+                  <span class="badge-success">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                    In Stock
+                  </span>
+                {% elif product.stock_status == 'low_stock' %}
+                  <span class="badge-warning">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                    Low Stock
+                  </span>
+                {% else %}
+                  <span class="badge-error">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                    Out of Stock
+                  </span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <a href="#" class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant" title="Edit">
+                    <span class="material-symbols-outlined text-[18px]">edit</span>
+                  </a>
+                  <button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant" title="More">
+                    <span class="material-symbols-outlined text-[18px]">more_vert</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+      <div class="flex items-center justify-between px-4 py-3 border-t border-outline-variant bg-surface-container-lowest">
+        <div class="text-xs text-on-surface-variant">
+          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </div>
+        <div class="flex items-center gap-1">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if search %}&q={{ search }}{% endif %}" class="btn-secondary text-xs h-8 px-3">Previous</a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if search %}&q={{ search }}{% endif %}" class="btn-secondary text-xs h-8 px-3">Next</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+  {% else %}
+    <div class="py-16 text-center">
+      <span class="material-symbols-outlined text-[48px] text-outline-variant">inventory_2</span>
+      <h3 class="mt-3 font-semibold">No products found</h3>
+      <p class="text-sm text-on-surface-variant mt-1">
+        {% if search %}Try a different search term.{% else %}Add your first product to get started.{% endif %}
+      </p>
+      <a href="#" class="btn-primary mt-4">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        Add Product
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

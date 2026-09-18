@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard — Crown Pharmacy{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="mb-6">
+  <h1 class="text-2xl font-bold font-display">Good day, {{ user.full_name }}</h1>
+  <p class="text-sm text-on-surface-variant mt-0.5">Here's your pharmacy overview for {{ today|date:"l, d M Y" }}.</p>
+</div>
+
+<!-- KPI CARDS -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
+
+  <div class="card p-4 hover:border-primary/40 transition">
+    <div class="flex items-center justify-between text-outline text-[11px] font-semibold uppercase tracking-wider">
+      <span>Today's Sales</span>
+      <span class="material-symbols-outlined text-[18px] text-primary">payments</span>
+    </div>
+    <div class="mt-2 text-lg font-bold font-mono">LKR {{ today_sales|floatformat:2 }}</div>
+    <div class="mt-1 flex items-center gap-1 text-[11px]">
+      <span class="material-symbols-outlined text-[14px] text-emerald-600">trending_up</span>
+      <span class="text-emerald-700">Live today</span>
+    </div>
+  </div>
+
+  <div class="card p-4 hover:border-primary/40 transition">
+    <div class="flex items-center justify-between text-outline text-[11px] font-semibold uppercase tracking-wider">
+      <span>Monthly Sales</span>
+      <span class="material-symbols-outlined text-[18px] text-secondary">calendar_month</span>
+    </div>
+    <div class="mt-2 text-lg font-bold font-mono">LKR {{ monthly_sales|floatformat:2 }}</div>
+    <div class="mt-1 text-[11px] text-on-surface-variant">Last 30 days</div>
+  </div>
+
+  <div class="card p-4 hover:border-primary/40 transition">
+    <div class="flex items-center justify-between text-outline text-[11px] font-semibold uppercase tracking-wider">
+      <span>Inventory Value</span>
+      <span class="material-symbols-outlined text-[18px] text-on-surface-variant">account_balance_wallet</span>
+    </div>
+    <div class="mt-2 text-lg font-bold font-mono">LKR {{ inventory_value|floatformat:2 }}</div>
+    <div class="mt-1 text-[11px] text-on-surface-variant">Cost basis</div>
+  </div>
+
+  <div class="card p-4 hover:border-primary/40 transition">
+    <div class="flex items-center justify-between text-outline text-[11px] font-semibold uppercase tracking-wider">
+      <span>Active Products</span>
+      <span class="material-symbols-outlined text-[18px] text-primary">medication</span>
+    </div>
+    <div class="mt-2 text-lg font-bold font-mono">{{ total_products }}</div>
+    <div class="mt-1 text-[11px] text-on-surface-variant">SKUs in catalog</div>
+  </div>
+
+  <div class="card p-4 hover:border-error/40 transition">
+    <div class="flex items-center justify-between text-red-600 text-[11px] font-semibold uppercase tracking-wider">
+      <span>Low Stock</span>
+      <span class="material-symbols-outlined text-[18px]">warning</span>
+    </div>
+    <div class="mt-2 text-lg font-bold font-mono text-red-600">{{ low_stock_count }}</div>
+    <div class="mt-1 text-[11px] text-red-700">Below min level</div>
+  </div>
+
+  <div class="card p-4 hover:border-amber-300 transition">
+    <div class="flex items-center justify-between text-amber-700 text-[11px] font-semibold uppercase tracking-wider">
+      <span>Expiring Soon</span>
+      <span class="material-symbols-outlined text-[18px]">hourglass_top</span>
+    </div>
+    <div class="mt-2 text-lg font-bold font-mono text-amber-700">{{ expiring_soon }}</div>
+    <div class="mt-1 text-[11px] text-amber-700">Within 90 days</div>
+  </div>
+
+</div>
+
+<!-- Two-column layout -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+  <!-- Recent Sales -->
+  <div class="card p-5">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold font-display">Recent Sales</h2>
+      <span class="text-xs text-primary cursor-pointer hover:underline">View all</span>
+    </div>
+
+    {% if recent_sales %}
+      <div class="divide-y divide-outline-variant">
+        {% for sale in recent_sales %}
+          <div class="py-2.5 flex items-center justify-between text-sm">
+            <div>
+              <div class="font-mono text-xs font-semibold text-primary">{{ sale.invoice_number }}</div>
+              <div class="text-xs text-on-surface-variant">{{ sale.customer_name|default:"Walk-in" }} • {{ sale.salesperson.full_name }}</div>
+            </div>
+            <div class="text-right">
+              <div class="font-mono font-semibold">LKR {{ sale.grand_total|floatformat:2 }}</div>
+              <div class="text-[10px] text-on-surface-variant">{{ sale.created_at|date:"H:i" }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="py-8 text-center text-on-surface-variant text-sm">
+        <span class="material-symbols-outlined text-[32px] text-outline-variant">receipt_long</span>
+        <p class="mt-2">No sales recorded today</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- FEFO Expiry Tracker -->
+  <div class="card p-5">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold font-display flex items-center gap-2">
+        <span class="material-symbols-outlined text-amber-600 text-[20px]">hourglass_bottom</span>
+        FEFO Expiry Tracker
+      </h2>
+      <span class="badge-warning">Critical &lt; 30d</span>
+    </div>
+
+    {% if fefo_batches %}
+      <div class="divide-y divide-outline-variant">
+        {% for batch in fefo_batches %}
+          <div class="py-2.5 flex items-center justify-between text-sm">
+            <div>
+              <div class="font-medium truncate max-w-[200px]">{{ batch.product.name }}</div>
+              <div class="text-[11px] font-mono text-on-surface-variant">Batch: {{ batch.batch_number }}</div>
+            </div>
+            <div class="text-right">
+              <div class="font-mono font-semibold text-amber-700">{{ batch.days_until_expiry }} days</div>
+              <div class="text-[10px] text-on-surface-variant">{{ batch.quantity_available }} units</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="py-8 text-center text-on-surface-variant text-sm">
+        <span class="material-symbols-outlined text-[32px] text-emerald-500">check_circle</span>
+        <p class="mt-2">No batches expiring in next 30 days</p>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}

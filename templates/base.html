@@ -1,0 +1,223 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Crown Pharmacy{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { DEFAULT: '#00685f', container: '#008378', fixed: '#89f5e7' },
+            secondary: { DEFAULT: '#006398', container: '#5bb8fe', fixed: '#cce5ff' },
+            tertiary: { DEFAULT: '#006860', container: '#248279' },
+            error: { DEFAULT: '#ba1a1a', container: '#ffdad6' },
+            surface: {
+              DEFAULT: '#faf8ff',
+              'container-lowest': '#ffffff',
+              'container-low': '#f2f3ff',
+              'container': '#eaedff',
+              'container-high': '#e2e7ff',
+              'container-highest': '#dae2fd',
+            },
+            'on-surface': { DEFAULT: '#131b2e', variant: '#3d4947' },
+            outline: { DEFAULT: '#6d7a77', variant: '#bcc9c6' },
+            background: '#faf8ff',
+          },
+          fontFamily: {
+            display: ['"Plus Jakarta Sans"', 'sans-serif'],
+            body: ['Inter', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="min-h-screen flex bg-background text-on-surface">
+
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <aside class="fixed left-0 top-0 h-screen w-64 bg-surface-container-lowest border-r border-outline-variant flex flex-col justify-between z-40 overflow-y-auto">
+    <div class="p-3 space-y-3">
+      <div class="flex items-center gap-2 pb-3 border-b border-outline-variant">
+        <div class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-sm">Rx</div>
+        <div class="min-w-0">
+          <div class="text-sm font-bold text-primary truncate font-display">Crown Pharmacy</div>
+          <div class="text-[11px] text-on-surface-variant truncate">
+            {% if user.role == 'admin' %}Admin / Branch Main-01{% else %}POS Terminal #01{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <button class="w-full flex items-center justify-between px-3 py-1.5 bg-surface-container-low hover:bg-surface-container rounded-lg text-xs font-medium text-primary transition">
+        <span class="flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[16px]">history</span>
+          Activity Log
+        </span>
+        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+      </button>
+
+      <nav class="space-y-0.5">
+        <a href="{% url 'dashboard:home' %}" class="nav-link {% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}">
+          <span class="material-symbols-outlined text-[19px]">dashboard</span>
+          <span>Dashboard</span>
+        </a>
+
+        {% if user.role == 'admin' or user.role == 'pharmacist' %}
+          <a href="{% url 'products:list' %}" class="nav-link {% if request.resolver_match.namespace == 'products' %}active{% endif %}">
+            <span class="material-symbols-outlined text-[19px]">medication</span>
+            <span>Products</span>
+          </a>
+          <a href="#" class="nav-link">
+            <span class="material-symbols-outlined text-[19px]">inventory_2</span>
+            <span>Inventory &amp; Stock</span>
+          </a>
+          <a href="#" class="nav-link">
+            <span class="material-symbols-outlined text-[19px]">move_to_inbox</span>
+            <span>Stock Receiving</span>
+          </a>
+          <a href="#" class="nav-link">
+            <span class="material-symbols-outlined text-[19px]">hourglass_bottom</span>
+            <span>Batches &amp; FEFO</span>
+          </a>
+        {% endif %}
+
+        <a href="#" class="nav-link">
+          <span class="material-symbols-outlined text-[19px]">point_of_sale</span>
+          <span>POS / Billing</span>
+        </a>
+        <a href="#" class="nav-link">
+          <span class="material-symbols-outlined text-[19px]">receipt_long</span>
+          <span>Sales History</span>
+        </a>
+        <a href="#" class="nav-link">
+          <span class="material-symbols-outlined text-[19px]">assignment_return</span>
+          <span>Returns</span>
+        </a>
+
+        {% if user.role == 'admin' %}
+          <a href="#" class="nav-link">
+            <span class="material-symbols-outlined text-[19px]">monitoring</span>
+            <span>Reports &amp; Analytics</span>
+          </a>
+        {% endif %}
+
+        <a href="#" class="nav-link">
+          <span class="material-symbols-outlined text-[19px]">groups</span>
+          <span>Customers</span>
+        </a>
+
+        {% if user.role == 'admin' %}
+          <a href="#" class="nav-link">
+            <span class="material-symbols-outlined text-[19px]">badge</span>
+            <span>Salespersons</span>
+          </a>
+          <a href="#" class="nav-link">
+            <span class="material-symbols-outlined text-[19px]">local_shipping</span>
+            <span>Suppliers</span>
+          </a>
+        {% endif %}
+
+        <a href="#" class="nav-link justify-between">
+          <span class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-[19px]">notifications_active</span>
+            <span>Alerts</span>
+          </span>
+          <span class="bg-red-100 text-red-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">3</span>
+        </a>
+
+        {% if user.role == 'admin' %}
+          <a href="#" class="nav-link">
+            <span class="material-symbols-outlined text-[19px]">settings</span>
+            <span>Settings</span>
+          </a>
+        {% endif %}
+      </nav>
+    </div>
+
+    <div class="p-3 border-t border-outline-variant space-y-1">
+      <div class="flex items-center gap-2 px-2 py-1.5">
+        <div class="w-8 h-8 rounded-full bg-primary-container text-white flex items-center justify-center text-xs font-bold">
+          {{ user.first_name|slice:":1" }}{{ user.last_name|slice:":1" }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-semibold truncate">{{ user.full_name }}</div>
+          <div class="text-[10px] text-on-surface-variant truncate">{{ user.get_role_display }}</div>
+        </div>
+      </div>
+
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-red-600 hover:bg-red-50 transition">
+          <span class="material-symbols-outlined text-[16px]">logout</span>
+          Sign out
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- ═══════════════ MAIN AREA ═══════════════ -->
+  <div class="flex-1 ml-64 flex flex-col min-w-0">
+    <header class="h-14 sticky top-0 z-30 flex items-center justify-between px-6 bg-surface-container-lowest border-b border-outline-variant">
+      <div class="flex items-center gap-4 flex-1 max-w-xl">
+        <h1 class="text-base font-semibold hidden md:block font-display">{% block page_title %}Dashboard{% endblock %}</h1>
+        <div class="relative flex-1 max-w-md">
+          <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+          <input type="text" placeholder="Search products, batches, invoices..." class="w-full h-9 pl-9 pr-3 text-sm bg-surface-container-low border border-outline-variant rounded-lg outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1">
+        <button class="p-2 rounded-lg hover:bg-surface-container text-on-surface-variant relative" title="Notifications">
+          <span class="material-symbols-outlined text-[20px]">notifications</span>
+          <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+        </button>
+        <button class="p-2 rounded-lg hover:bg-surface-container text-on-surface-variant" title="Store">
+          <span class="material-symbols-outlined text-[20px]">storefront</span>
+        </button>
+        <button class="p-2 rounded-lg hover:bg-surface-container text-on-surface-variant" title="Settings">
+          <span class="material-symbols-outlined text-[20px]">tune</span>
+        </button>
+      </div>
+    </header>
+
+    {% if messages %}
+      <div class="px-6 pt-4 space-y-2">
+        {% for message in messages %}
+          <div class="flex items-center gap-2 px-4 py-2.5 rounded-lg border
+            {% if message.tags == 'success' %}bg-green-50 border-green-200 text-green-800
+            {% elif message.tags == 'error' %}bg-red-50 border-red-200 text-red-800
+            {% elif message.tags == 'warning' %}bg-amber-50 border-amber-200 text-amber-800
+            {% else %}bg-surface-container border-outline-variant text-on-surface-variant{% endif %}">
+            <span class="material-symbols-outlined text-[18px]">
+              {% if message.tags == 'success' %}check_circle
+              {% elif message.tags == 'error' %}error
+              {% elif message.tags == 'warning' %}warning
+              {% else %}info{% endif %}
+            </span>
+            <span class="text-sm flex-1">{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <main class="flex-1 p-6 bg-background">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
