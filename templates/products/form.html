@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if mode == 'create' %}Add Product{% else %}Edit {{ product.name }}{% endif %} — Crown Pharmacy{% endblock %}
+{% block page_title %}{% if mode == 'create' %}Add Product{% else %}Edit Product{% endif %}{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumbs + header -->
+<nav class="flex items-center gap-1.5 text-xs text-on-surface-variant mb-2">
+  <a href="{% url 'products:list' %}" class="hover:text-primary">Products</a>
+  <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+  <span class="text-primary font-semibold">{% if mode == 'create' %}New Product{% else %}{{ product.name }}{% endif %}</span>
+</nav>
+
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold font-display">{% if mode == 'create' %}Add New Product{% else %}Edit: {{ product.name }}{% endif %}</h1>
+    <p class="text-sm text-on-surface-variant mt-0.5">Define product identity, pricing, and inventory thresholds.</p>
+  </div>
+  <a href="{% url 'products:list' %}" class="btn-secondary">
+    <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+    Back to List
+  </a>
+</div>
+
+{% if form.non_field_errors %}
+  <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+    {% for err in form.non_field_errors %}<div>{{ err }}</div>{% endfor %}
+  </div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="space-y-4">
+  {% csrf_token %}
+
+  <!-- ═══ 1. IDENTITY ═══ -->
+  <div class="card p-5">
+    <h2 class="font-semibold font-display mb-4 flex items-center gap-2">
+      <span class="material-symbols-outlined text-[20px] text-primary">badge</span>
+      Identity &amp; Classification
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">SKU <span class="text-red-500">*</span></label>
+        {{ form.sku }}
+        {% if form.sku.errors %}<p class="text-xs text-red-600 mt-1">{{ form.sku.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Barcode</label>
+        {{ form.barcode }}
+        {% if form.barcode.errors %}<p class="text-xs text-red-600 mt-1">{{ form.barcode.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Brand</label>
+        {{ form.brand }}
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium mb-1">Product Name <span class="text-red-500">*</span></label>
+        {{ form.name }}
+        {% if form.name.errors %}<p class="text-xs text-red-600 mt-1">{{ form.name.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Generic Name</label>
+        {{ form.generic_name }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Category</label>
+        {{ form.category }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Drug Schedule <span class="text-red-500">*</span></label>
+        {{ form.drug_schedule }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Dosage Form</label>
+        {{ form.dosage_form }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Strength</label>
+        {{ form.strength }}
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium mb-1">Description</label>
+        {{ form.description }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 2. PRICING ═══ -->
+  <div class="card p-5">
+    <h2 class="font-semibold font-display mb-4 flex items-center gap-2">
+      <span class="material-symbols-outlined text-[20px] text-primary">payments</span>
+      Pricing (LKR)
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Cost Price <span class="text-red-500">*</span></label>
+        {{ form.cost_price }}
+        {% if form.cost_price.errors %}<p class="text-xs text-red-600 mt-1">{{ form.cost_price.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Selling Price <span class="text-red-500">*</span></label>
+        {{ form.selling_price }}
+        {% if form.selling_price.errors %}<p class="text-xs text-red-600 mt-1">{{ form.selling_price.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">MRP</label>
+        {{ form.mrp }}
+        {% if form.mrp.errors %}<p class="text-xs text-red-600 mt-1">{{ form.mrp.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Tax Rate (%)</label>
+        {{ form.tax_rate }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Discount (%)</label>
+        {{ form.discount_percent }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Unit Type</label>
+        {{ form.unit_type }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 3. INVENTORY ═══ -->
+  <div class="card p-5">
+    <h2 class="font-semibold font-display mb-4 flex items-center gap-2">
+      <span class="material-symbols-outlined text-[20px] text-primary">inventory_2</span>
+      Inventory &amp; Storage
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Min Stock Level</label>
+        {{ form.min_stock_level }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Max Stock Level</label>
+        {{ form.max_stock_level }}
+        {% if form.max_stock_level.errors %}<p class="text-xs text-red-600 mt-1">{{ form.max_stock_level.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Storage Location</label>
+        {{ form.storage_location }}
+      </div>
+    </div>
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <label class="flex items-center gap-2 p-3 rounded-lg border border-outline-variant hover:bg-surface-container-low cursor-pointer transition">
+        {{ form.is_cold_chain }}
+        <div>
+          <div class="text-sm font-medium">Cold Chain (2-8°C)</div>
+          <div class="text-[11px] text-on-surface-variant">Requires refrigerated storage</div>
+        </div>
+      </label>
+      <label class="flex items-center gap-2 p-3 rounded-lg border border-outline-variant hover:bg-surface-container-low cursor-pointer transition">
+        {{ form.is_controlled }}
+        <div>
+          <div class="text-sm font-medium">Controlled Substance</div>
+          <div class="text-[11px] text-on-surface-variant">Schedule II / III narcotic</div>
+        </div>
+      </label>
+      <label class="flex items-center gap-2 p-3 rounded-lg border border-outline-variant hover:bg-surface-container-low cursor-pointer transition">
+        {{ form.is_active }}
+        <div>
+          <div class="text-sm font-medium">Active</div>
+          <div class="text-[11px] text-on-surface-variant">Available for sale</div>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <!-- ═══ 4. IMAGE ═══ -->
+  <div class="card p-5">
+    <h2 class="font-semibold font-display mb-4 flex items-center gap-2">
+      <span class="material-symbols-outlined text-[20px] text-primary">image</span>
+      Product Image
+    </h2>
+    <div class="flex items-center gap-4">
+      {% if product and product.image %}
+        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-20 h-20 rounded-lg object-cover border border-outline-variant">
+      {% else %}
+        <div class="w-20 h-20 rounded-lg bg-surface-container flex items-center justify-center text-outline">
+          <span class="material-symbols-outlined text-[32px]">image</span>
+        </div>
+      {% endif %}
+      <div class="flex-1">
+        {{ form.image }}
+        <p class="text-[11px] text-on-surface-variant mt-1">JPG, PNG, or WebP. Max 5MB.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ACTIONS ═══ -->
+  <div class="flex items-center justify-end gap-2 pt-4">
+    <a href="{% url 'products:list' %}" class="btn-secondary">Cancel</a>
+    <button type="submit" class="btn-primary">
+      <span class="material-symbols-outlined text-[18px]">save</span>
+      {% if mode == 'create' %}Create Product{% else %}Save Changes{% endif %}
+    </button>
+  </div>
+</form>
+
+{% endblock %}

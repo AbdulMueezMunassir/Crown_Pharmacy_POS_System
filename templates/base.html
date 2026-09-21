@@ -76,22 +76,15 @@
         </a>
 
         {% if user.role == 'admin' or user.role == 'pharmacist' %}
-          <a href="{% url 'products:list' %}" class="nav-link {% if request.resolver_match.namespace == 'products' %}active{% endif %}">
+          <a href="{% url 'products:list' %}" class="nav-link {% if request.resolver_match.namespace == 'products' and 'category' not in request.path %}active{% endif %}">
             <span class="material-symbols-outlined text-[19px]">medication</span>
             <span>Products</span>
           </a>
-          <a href="#" class="nav-link">
-            <span class="material-symbols-outlined text-[19px]">inventory_2</span>
-            <span>Inventory &amp; Stock</span>
+          <a href="{% url 'products:category_list' %}" class="nav-link {% if 'category' in request.path %}active{% endif %} ml-4">
+            <span class="material-symbols-outlined text-[17px] text-outline">subdirectory_arrow_right</span>
+            <span class="text-xs">Categories</span>
           </a>
-          <a href="#" class="nav-link">
-            <span class="material-symbols-outlined text-[19px]">move_to_inbox</span>
-            <span>Stock Receiving</span>
-          </a>
-          <a href="#" class="nav-link">
-            <span class="material-symbols-outlined text-[19px]">hourglass_bottom</span>
-            <span>Batches &amp; FEFO</span>
-          </a>
+          <!-- ... keep the rest: Inventory, Stock Receiving, Batches -->
         {% endif %}
 
         <a href="#" class="nav-link">

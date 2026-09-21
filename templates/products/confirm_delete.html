@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Deactivate {{ product.name }} — Crown Pharmacy{% endblock %}
+{% block page_title %}Confirm Deactivation{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-12">
+  <div class="card p-6 text-center">
+    <div class="w-14 h-14 rounded-full bg-red-100 mx-auto flex items-center justify-center">
+      <span class="material-symbols-outlined text-[28px] text-red-600">warning</span>
+    </div>
+    <h1 class="text-lg font-bold font-display mt-4">Deactivate this product?</h1>
+    <p class="text-sm text-on-surface-variant mt-2">
+      <strong>{{ product.name }}</strong> (SKU: {{ product.sku }}) will be marked as inactive. It won't appear in the product list, but historical sales and batch data are preserved.
+    </p>
+
+    <form method="post" class="mt-5 flex items-center justify-center gap-2">
+      {% csrf_token %}
+      <a href="{% url 'products:detail' product.pk %}" class="btn-secondary">Cancel</a>
+      <button type="submit" class="btn-danger">
+        <span class="material-symbols-outlined text-[18px]">block</span>
+        Yes, Deactivate
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

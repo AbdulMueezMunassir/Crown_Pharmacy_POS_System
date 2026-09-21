@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Categories — Crown Pharmacy{% endblock %}
+{% block page_title %}Categories{% endblock %}
+
+{% block content %}
+
+<div class="flex items-center justify-between mb-4">
+  <div>
+    <h1 class="text-2xl font-bold font-display">Product Categories</h1>
+    <p class="text-sm text-on-surface-variant">{{ categories|length }} categories</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="{% url 'products:list' %}" class="btn-secondary">
+      <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+      Back to Products
+    </a>
+    <a href="{% url 'products:category_create' %}" class="btn-primary">
+      <span class="material-symbols-outlined text-[18px]">add</span>
+      New Category
+    </a>
+  </div>
+</div>
+
+<div class="card overflow-hidden">
+  {% if categories %}
+    <table class="w-full text-sm">
+      <thead class="bg-surface-container-low text-on-surface-variant">
+        <tr>
+          <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Name</th>
+          <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Description</th>
+          <th class="text-right px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Products</th>
+          <th class="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Status</th>
+          <th class="text-right px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-outline-variant">
+        {% for cat in categories %}
+          <tr class="hover:bg-surface-container-low/60 transition">
+            <td class="px-4 py-3 font-semibold">{{ cat.name }}</td>
+            <td class="px-4 py-3 text-on-surface-variant">{{ cat.description|truncatechars:60|default:"—" }}</td>
+            <td class="px-4 py-3 text-right font-mono">{{ cat.product_count }}</td>
+            <td class="px-4 py-3 text-center">
+              {% if cat.is_active %}
+                <span class="badge-success">Active</span>
+              {% else %}
+                <span class="badge-error">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-1">
+                <a href="{% url 'products:category_edit' cat.pk %}" class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant">
+                  <span class="material-symbols-outlined text-[18px]">edit</span>
+                </a>
+                <a href="{% url 'products:category_delete' cat.pk %}" class="p-1.5 rounded hover:bg-red-50 text-red-600">
+                  <span class="material-symbols-outlined text-[18px]">delete</span>
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="py-16 text-center">
+      <span class="material-symbols-outlined text-[48px] text-outline-variant">category</span>
+      <h3 class="mt-2 font-semibold">No categories yet</h3>
+      <p class="text-sm text-on-surface-variant">Organize your products by creating categories.</p>
+      <a href="{% url 'products:category_create' %}" class="btn-primary mt-4">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        Create First Category
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

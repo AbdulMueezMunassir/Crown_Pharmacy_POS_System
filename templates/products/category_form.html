@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if mode == 'create' %}New Category{% else %}Edit Category{% endif %} — Crown Pharmacy{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+  <nav class="flex items-center gap-1.5 text-xs text-on-surface-variant mb-2">
+    <a href="{% url 'products:list' %}" class="hover:text-primary">Products</a>
+    <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+    <a href="{% url 'products:category_list' %}" class="hover:text-primary">Categories</a>
+    <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+    <span class="text-primary font-semibold">{% if mode == 'create' %}New{% else %}Edit{% endif %}</span>
+  </nav>
+
+  <h1 class="text-2xl font-bold font-display mb-4">
+    {% if mode == 'create' %}New Category{% else %}Edit "{{ category.name }}"{% endif %}
+  </h1>
+
+  <form method="post" class="card p-5 space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-medium mb-1">Name <span class="text-red-500">*</span></label>
+      {{ form.name }}
+      {% if form.name.errors %}<p class="text-xs text-red-600 mt-1">{{ form.name.errors.0 }}</p>{% endif %}
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1">Description</label>
+      {{ form.description }}
+    </div>
+    <label class="flex items-center gap-2 cursor-pointer">
+      {{ form.is_active }}
+      <span class="text-sm">Active</span>
+    </label>
+
+    <div class="flex items-center justify-end gap-2 pt-2">
+      <a href="{% url 'products:category_list' %}" class="btn-secondary">Cancel</a>
+      <button type="submit" class="btn-primary">
+        <span class="material-symbols-outlined text-[18px]">save</span>
+        {% if mode == 'create' %}Create{% else %}Save{% endif %}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

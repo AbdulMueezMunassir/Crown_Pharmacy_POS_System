@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} — Crown Pharmacy{% endblock %}
+{% block page_title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumbs -->
+<nav class="flex items-center gap-1.5 text-xs text-on-surface-variant mb-2">
+  <a href="{% url 'products:list' %}" class="hover:text-primary">Products</a>
+  <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+  <span class="text-primary font-semibold">{{ product.name }}</span>
+</nav>
+
+<!-- Header card -->
+<div class="card p-5 mb-4">
+  <div class="flex flex-col md:flex-row md:items-start gap-5">
+    {% if product.image %}
+      <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-24 h-24 rounded-lg object-cover border border-outline-variant">
+    {% else %}
+      <div class="w-24 h-24 rounded-lg bg-surface-container flex items-center justify-center text-primary text-3xl">
+        <span class="material-symbols-outlined text-[40px]">medication</span>
+      </div>
+    {% endif %}
+
+    <div class="flex-1">
+      <div class="flex items-center gap-2 flex-wrap">
+        <h1 class="text-2xl font-bold font-display">{{ product.name }}</h1>
+        {% if product.stock_status == 'in_stock' %}
+          <span class="badge-success">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>In Stock
+          </span>
+        {% elif product.stock_status == 'low_stock' %}
+          <span class="badge-warning">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>Low Stock
+          </span>
+        {% else %}
+          <span class="badge-error">
+            <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>Out of Stock
+          </span>
+        {% endif %}
+        {% if product.is_cold_chain %}
+          <span class="badge-info">
+            <span class="material-symbols-outlined text-[12px]">ac_unit</span>Cold Chain
+          </span>
+        {% endif %}
+        {% if product.is_controlled %}
+          <span class="badge-warning">
+            <span class="material-symbols-outlined text-[12px]">shield</span>{{ product.get_drug_schedule_display }}
+          </span>
+        {% endif %}
+      </div>
+
+      <p class="text-sm text-on-surface-variant mt-1">
+        {{ product.generic_name|default:"" }}{% if product.dosage_form %} • {{ product.dosage_form }}{% endif %}{% if product.strength %} • {{ product.strength }}{% endif %}
+      </p>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+        <div>
+          <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">SKU</div>
+          <div class="font-mono text-sm font-medium text-primary">{{ product.sku }}</div>
+        </div>
+        <div>
+          <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">Barcode</div>
+          <div class="font-mono text-sm">{{ product.barcode|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">Category</div>
+          <div class="text-sm">{{ product.category.name|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">Storage</div>
+          <div class="text-sm">{{ product.storage_location|default:"—" }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="flex flex-col gap-2 md:w-44">
+      <a href="{% url 'products:edit' product.pk %}" class="btn-primary justify-center">
+        <span class="material-symbols-outlined text-[18px]">edit</span>
+        Edit Product
+      </a>
+      <a href="{% url 'products:delete' product.pk %}" class="btn-secondary justify-center text-red-600 hover:bg-red-50 border-red-200">
+        <span class="material-symbols-outlined text-[18px]">block</span>
+        Deactivate
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Stats row -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+  <div class="card p-4">
+    <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">Total Available</div>
+    <div class="mt-1 text-xl font-bold font-mono">{{ total_available }} <span class="text-xs font-normal text-on-surface-variant">{{ product.get_unit_type_display }}s</span></div>
+  </div>
+  <div class="card p-4">
+    <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">Active Batches</div>
+    <div class="mt-1 text-xl font-bold font-mono">{{ batch_count }}</div>
+  </div>
+  <div class="card p-4">
+    <div class="text-[11px] text-amber-700 uppercase tracking-wider font-semibold">Expiring &lt; 30d</div>
+    <div class="mt-1 text-xl font-bold font-mono {% if expiring_30 %}text-amber-700{% endif %}">{{ expiring_30 }}</div>
+  </div>
+  <div class="card p-4">
+    <div class="text-[11px] text-red-600 uppercase tracking-wider font-semibold">Expired</div>
+    <div class="mt-1 text-xl font-bold font-mono {% if expired %}text-red-600{% endif %}">{{ expired }}</div>
+  </div>
+</div>
+
+<!-- Pricing -->
+<div class="card p-5 mb-4">
+  <h2 class="font-semibold font-display mb-4 flex items-center gap-2">
+    <span class="material-symbols-outlined text-[20px] text-primary">payments</span>
+    Pricing (LKR)
+  </h2>
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div>
+      <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">Cost</div>
+      <div class="font-mono text-lg font-bold">{{ product.cost_price|floatformat:2 }}</div>
+    </div>
+    <div>
+      <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">Selling</div>
+      <div class="font-mono text-lg font-bold text-primary">{{ product.selling_price|floatformat:2 }}</div>
+    </div>
+    <div>
+      <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">Margin</div>
+      <div class="font-mono text-lg font-bold {% if product.margin_percent >= 20 %}text-emerald-600{% else %}text-amber-600{% endif %}">{{ product.margin_percent }}%</div>
+    </div>
+    <div>
+      <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">MRP</div>
+      <div class="font-mono text-lg">{{ product.mrp|default:"—" }}</div>
+    </div>
+    <div>
+      <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">Tax</div>
+      <div class="font-mono text-lg">{{ product.tax_rate|floatformat:2 }}%</div>
+    </div>
+  </div>
+</div>
+
+<!-- Batches table -->
+<div class="card overflow-hidden">
+  <div class="px-5 py-4 border-b border-outline-variant flex items-center justify-between">
+    <h2 class="font-semibold font-display flex items-center gap-2">
+      <span class="material-symbols-outlined text-[20px] text-primary">layers</span>
+      Batches (FEFO Order)
+    </h2>
+    <span class="text-xs text-on-surface-variant">Sorted by earliest expiry</span>
+  </div>
+
+  {% if batches %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-surface-container-low text-on-surface-variant">
+          <tr>
+            <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Batch #</th>
+            <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Supplier</th>
+            <th class="text-right px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Available</th>
+            <th class="text-right px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Cost</th>
+            <th class="text-right px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Selling</th>
+            <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Expiry</th>
+            <th class="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant">
+          {% for batch in batches %}
+            <tr class="hover:bg-surface-container-low/60 transition">
+              <td class="px-4 py-3 font-mono text-xs font-medium">{{ batch.batch_number }}</td>
+              <td class="px-4 py-3 text-on-surface-variant">{{ batch.supplier.name|default:"—" }}</td>
+              <td class="px-4 py-3 text-right font-mono font-semibold">{{ batch.quantity_available }}</td>
+              <td class="px-4 py-3 text-right font-mono">{{ batch.cost_price|floatformat:2 }}</td>
+              <td class="px-4 py-3 text-right font-mono">{{ batch.selling_price|floatformat:2 }}</td>
+              <td class="px-4 py-3 font-mono text-xs">
+                {{ batch.expiry_date|date:"d M Y" }}
+                <div class="text-[10px] text-on-surface-variant">{{ batch.days_until_expiry }} days</div>
+              </td>
+              <td class="px-4 py-3 text-center">
+                {% if batch.expiry_status == 'expired' %}
+                  <span class="badge-error">Expired</span>
+                {% elif batch.expiry_status == 'critical_30' %}
+                  <span class="badge-warning">
+                    <span class="material-symbols-outlined text-[12px]">warning</span>
+                    {{ batch.days_until_expiry }}d
+                  </span>
+                {% elif batch.expiry_status == 'warning_90' %}
+                  <span class="badge-info">{{ batch.days_until_expiry }}d</span>
+                {% else %}
+                  <span class="badge-success">
+                    <span class="material-symbols-outlined text-[12px]">check</span>
+                    OK
+                  </span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="py-12 text-center">
+      <span class="material-symbols-outlined text-[48px] text-outline-variant">inbox</span>
+      <h3 class="mt-2 font-semibold">No batches yet</h3>
+      <p class="text-sm text-on-surface-variant">Use Stock Receiving to add batches to this product.</p>
+      <a href="#" class="btn-primary mt-4">
+        <span class="material-symbols-outlined text-[18px]">move_to_inbox</span>
+        Receive Stock
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

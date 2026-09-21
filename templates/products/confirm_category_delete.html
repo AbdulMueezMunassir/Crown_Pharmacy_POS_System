@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete {{ category.name }} — Crown Pharmacy{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-12">
+  <div class="card p-6 text-center">
+    <div class="w-14 h-14 rounded-full bg-red-100 mx-auto flex items-center justify-center">
+      <span class="material-symbols-outlined text-[28px] text-red-600">delete</span>
+    </div>
+    <h1 class="text-lg font-bold font-display mt-4">Delete this category?</h1>
+    <p class="text-sm text-on-surface-variant mt-2">
+      Deleting <strong>{{ category.name }}</strong> will unlink all products from this category. Products themselves are NOT deleted.
+    </p>
+
+    <form method="post" class="mt-5 flex items-center justify-center gap-2">
+      {% csrf_token %}
+      <a href="{% url 'products:category_list' %}" class="btn-secondary">Cancel</a>
+      <button type="submit" class="btn-danger">
+        <span class="material-symbols-outlined text-[18px]">delete</span>
+        Yes, Delete
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
