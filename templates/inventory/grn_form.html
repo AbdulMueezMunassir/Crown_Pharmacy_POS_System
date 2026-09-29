@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Receive Stock — Crown Pharmacy{% endblock %}
+{% block page_title %}Stock Receiving{% endblock %}
+
+{% block content %}
+
+<nav class="flex items-center gap-1.5 text-xs text-on-surface-variant mb-2">
+  <a href="{% url 'inventory:overview' %}" class="hover:text-primary">Inventory</a>
+  <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+  <a href="{% url 'inventory:grn_list' %}" class="hover:text-primary">Receiving</a>
+  <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+  <span class="text-primary font-semibold">New GRN</span>
+</nav>
+
+<div class="flex items-center justify-between mb-4">
+  <div>
+    <h1 class="text-2xl font-bold font-display">Receive New Stock</h1>
+    <p class="text-sm text-on-surface-variant mt-0.5">Enter supplier details and add line items (batches).</p>
+  </div>
+</div>
+
+<form method="post" class="space-y-4">
+  {% csrf_token %}
+
+  <div class="card p-5">
+    <h2 class="font-semibold font-display mb-4 flex items-center gap-2">
+      <span class="material-symbols-outlined text-[20px] text-primary">receipt_long</span>
+      Invoice &amp; Supplier Metadata
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium mb-1">Supplier <span class="text-red-500">*</span></label>
+        {{ form.supplier }}
+        {% if form.supplier.errors %}<p class="text-xs text-red-600 mt-1">{{ form.supplier.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Inward Date <span class="text-red-500">*</span></label>
+        {{ form.inward_date }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Supplier Invoice #</label>
+        {{ form.supplier_invoice }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Delivery Order (DO) #</label>
+        {{ form.do_number }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Purchase Order (PO) #</label>
+        {{ form.po_number }}
+      </div>
+      <div class="md:col-span-3">
+        <label class="block text-sm font-medium mb-1">Notes</label>
+        {{ form.notes }}
+      </div>
+    </div>
+  </div>
+
+  <div class="card overflow-hidden">
+    <div class="px-5 py-4 border-b border-outline-variant bg-surface-container-low/40">
+      <h2 class="font-semibold font-display flex items-center gap-2">
+        <span class="material-symbols-outlined text-[20px] text-primary">layers</span>
+        Consignment Items (Batches)
+      </h2>
+      <p class="text-xs text-on-surface-variant mt-1">Each row creates a new batch. Duplicate batch numbers add to existing batches.</p>
+    </div>
+
+    {{ formset.management_form }}
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-surface-container-low text-on-surface-variant">
+          <tr>
+            <th class="text-left px-3 py-2.5 text-[10px] uppercase tracking-wider font-semibold">Product</th>
+            <th class="text-left px-3 py-2.5 text-[10px] uppercase tracking-wider font-semibold">Batch #</th>
+            <th class="text-right px-3 py-2.5 text-[10px] uppercase tracking-wider font-semibold">Qty</th>
+            <th class="text-right px-3 py-2.5 text-[10px] uppercase tracking-wider font-semibold">Free</th>
+            <th class="text-right px-3 py-2.5 text-[10px] uppercase tracking-wider font-semibold">Cost</th>
+            <th class="text-right px-3 py-2.5 text-[10px] uppercase tracking-wider font-semibold">Disc%</th>
+            <th class="text-right px-3 py-2.5 text-[10px] uppercase tracking-wider font-semibold">Selling</th>
+            <th class="text-left px-3 py-2.5 text-[10px] uppercase tracking-wider font-semibold">Mfg Date</th>
+            <th class="text-left px-3 py-2.5 text-[10px] uppercase tracking-wider font-semibold">Expiry *</th>
+            <th class="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider font-semibold">Del</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant">
+          {% for item_form in formset %}
+            <tr class="hover:bg-surface-container-low/40">
+              <td class="px-3 py-2 min-w-[200px]">
+                {{ item_form.id }}
+                {{ item_form.product }}
+                {% if item_form.product.errors %}<p class="text-[10px] text-red-600">{{ item_form.product.errors.0 }}</p>{% endif %}
+              </td>
+              <td class="px-3 py-2 min-w-[130px]">
+                {{ item_form.batch_number }}
+                {% if item_form.batch_number.errors %}<p class="text-[10px] text-red-600">{{ item_form.batch_number.errors.0 }}</p>{% endif %}
+              </td>
+              <td class="px-3 py-2 w-24">{{ item_form.quantity }}</td>
+              <td class="px-3 py-2 w-20">{{ item_form.free_quantity }}</td>
+              <td class="px-3 py-2 w-28">{{ item_form.cost_price }}</td>
+              <td class="px-3 py-2 w-20">{{ item_form.discount_percent }}</td>
+              <td class="px-3 py-2 w-28">
+                {{ item_form.selling_price }}
+                {% if item_form.selling_price.errors %}<p class="text-[10px] text-red-600">{{ item_form.selling_price.errors.0 }}</p>{% endif %}
+              </td>
+              <td class="px-3 py-2 w-32">{{ item_form.manufacturing_date }}</td>
+              <td class="px-3 py-2 w-32">
+                {{ item_form.expiry_date }}
+                {% if item_form.expiry_date.errors %}<p class="text-[10px] text-red-600">{{ item_form.expiry_date.errors.0 }}</p>{% endif %}
+              </td>
+              <td class="px-3 py-2 text-center w-14">
+                {% if item_form.instance.pk %}{{ item_form.DELETE }}{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if formset.non_form_errors %}
+    <div class="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+      {{ formset.non_form_errors.0 }}
+    </div>
+  {% endif %}
+
+  <div class="flex items-center justify-end gap-2 pt-2">
+    <a href="{% url 'inventory:grn_list' %}" class="btn-secondary">Cancel</a>
+    <button type="submit" class="btn-primary">
+      <span class="material-symbols-outlined text-[18px]">save</span>
+      Create GRN as Draft
+    </button>
+  </div>
+</form>
+
+{% endblock %}
