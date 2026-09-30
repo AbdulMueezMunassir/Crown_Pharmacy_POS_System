@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ sale.invoice_number }} — Crown Pharmacy{% endblock %}
+{% block page_title %}{{ sale.invoice_number }}{% endblock %}
+
+{% block content %}
+
+<nav class="flex items-center gap-1.5 text-xs text-on-surface-variant mb-2">
+  <a href="{% url 'sales:list' %}" class="hover:text-primary">Sales</a>
+  <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+  <span class="text-primary font-semibold">{{ sale.invoice_number }}</span>
+</nav>
+
+<div class="card p-5 mb-4">
+  <div class="flex items-start justify-between">
+    <div>
+      <h1 class="text-2xl font-bold font-display">{{ sale.invoice_number }}</h1>
+      <p class="text-sm text-on-surface-variant mt-1">
+        {{ sale.created_at|date:"d M Y, H:i" }} • Served by <strong>{{ sale.salesperson.full_name }}</strong>
+      </p>
+      <div class="flex items-center gap-2 mt-3">
+        <span class="badge-success">{{ sale.get_status_display }}</span>
+        <span class="badge-info">{{ sale.get_payment_method_display }}</span>
+      </div>
+    </div>
+    <a href="{% url 'sales:invoice' sale.pk %}" target="_blank" class="btn-secondary">
+      <span class="material-symbols-outlined text-[18px]">print</span>
+      Print Invoice
+    </a>
+  </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 pt-4 border-t border-outline-variant">
+    <div>
+      <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">Customer</div>
+      <div class="text-sm font-medium">{{ sale.customer_name|default:"Walk-in Customer" }}</div>
+      {% if sale.customer_mobile %}<div class="text-xs font-mono">{{ sale.customer_mobile }}</div>{% endif %}
+    </div>
+    <div>
+      <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">Items</div>
+      <div class="text-sm font-mono font-semibold">{{ sale.items.count }}</div>
+    </div>
+    <div>
+      <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">Amount Paid</div>
+      <div class="text-sm font-mono">LKR {{ sale.amount_paid|floatformat:2 }}</div>
+    </div>
+    <div>
+      <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">Change</div>
+      <div class="text-sm font-mono">LKR {{ sale.change_amount|floatformat:2 }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card overflow-hidden mb-4">
+  <div class="px-5 py-3 border-b border-outline-variant">
+    <h2 class="font-semibold font-display">Line Items</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-surface-container-low text-on-surface-variant">
+        <tr>
+          <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Product</th>
+          <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Batch / Expiry</th>
+          <th class="text-right px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Qty</th>
+          <th class="text-right px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Unit</th>
+          <th class="text-right px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Total</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-outline-variant">
+        {% for item in sale.items.all %}
+          <tr>
+            <td class="px-4 py-3 font-semibold">{{ item.product_name }}</td>
+            <td class="px-4 py-3 font-mono text-xs">
+              {{ item.batch_number }} <br>
+              <span class="text-on-surface-variant">{{ item.expiry_date|date:"M Y" }}</span>
+            </td>
+            <td class="px-4 py-3 text-right font-mono">{{ item.quantity }}</td>
+            <td class="px-4 py-3 text-right font-mono">{{ item.unit_price|floatformat:2 }}</td>
+            <td class="px-4 py-3 text-right font-mono font-semibold">{{ item.line_total|floatformat:2 }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="grid grid-cols-3 gap-3">
+  <div class="card p-4">
+    <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">Subtotal</div>
+    <div class="font-mono text-lg font-bold mt-1">LKR {{ sale.subtotal|floatformat:2 }}</div>
+  </div>
+  <div class="card p-4">
+    <div class="text-[11px] text-outline uppercase tracking-wider font-semibold">Discount</div>
+    <div class="font-mono text-lg font-bold mt-1 text-emerald-700">- LKR {{ sale.discount_amount|floatformat:2 }}</div>
+  </div>
+  <div class="card p-4 border-primary/40">
+    <div class="text-[11px] text-primary uppercase tracking-wider font-semibold">Grand Total</div>
+    <div class="font-mono text-xl font-bold mt-1 text-primary">LKR {{ sale.grand_total|floatformat:2 }}</div>
+  </div>
+</div>
+
+{% endblock %}

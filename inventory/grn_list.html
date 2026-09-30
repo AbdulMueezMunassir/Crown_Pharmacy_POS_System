@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Stock Receiving — Crown Pharmacy{% endblock %}
+{% block page_title %}Stock Receiving{% endblock %}
+
+{% block content %}
+
+<div class="flex items-center justify-between mb-4">
+  <div>
+    <h1 class="text-2xl font-bold font-display">Stock Receiving (GRN)</h1>
+    <p class="text-sm text-on-surface-variant">{{ total_count }} Goods Received Notes</p>
+  </div>
+  <a href="{% url 'inventory:grn_create' %}" class="btn-primary">
+    <span class="material-symbols-outlined text-[18px]">add</span>
+    New GRN
+  </a>
+</div>
+
+<!-- Filters -->
+<div class="card p-3 mb-4">
+  <form method="get" class="flex items-center gap-2 flex-wrap">
+    <div class="relative flex-1 min-w-[240px]">
+      <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+      <input type="text" name="q" value="{{ search }}" placeholder="Search GRN #, supplier, invoice..." class="input-field pl-9">
+    </div>
+    <select name="status" class="input-field max-w-[180px]">
+      <option value="">All Statuses</option>
+      <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+      <option value="posted" {% if status_filter == 'posted' %}selected{% endif %}>Posted</option>
+      <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+    </select>
+    <button type="submit" class="btn-secondary">Filter</button>
+    {% if search or status_filter %}
+      <a href="{% url 'inventory:grn_list' %}" class="btn-secondary">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- GRN Table -->
+<div class="card overflow-hidden">
+  {% if page_obj %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-surface-container-low text-on-surface-variant">
+          <tr>
+            <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">GRN #</th>
+            <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Supplier</th>
+            <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Invoice / DO</th>
+            <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Date</th>
+            <th class="text-right px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Items</th>
+            <th class="text-right px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Net Payable</th>
+            <th class="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Status</th>
+            <th class="text-right px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant">
+          {% for grn in page_obj %}
+            <tr class="hover:bg-surface-container-low/60 transition">
+              <td class="px-4 py-3 font-mono text-xs font-medium text-primary">{{ grn.grn_number }}</td>
+              <td class="px-4 py-3">{{ grn.supplier.name }}</td>
+              <td class="px-4 py-3 text-xs">
+                <div>{{ grn.supplier_invoice|default:"—" }}</div>
+                {% if grn.do_number %}<div class="text-on-surface-variant">DO: {{ grn.do_number }}</div>{% endif %}
+              </td>
+              <td class="px-4 py-3 text-xs font-mono">{{ grn.inward_date|date:"d M Y" }}</td>
+              <td class="px-4 py-3 text-right font-mono">{{ grn.items.count }}</td>
+              <td class="px-4 py-3 text-right font-mono font-semibold">LKR {{ grn.net_payable|floatformat:2 }}</td>
+              <td class="px-4 py-3 text-center">
+                {% if grn.status == 'draft' %}
+                  <span class="badge-warning">Draft</span>
+                {% elif grn.status == 'posted' %}
+                  <span class="badge-success">Posted</span>
+                {% else %}
+                  <span class="badge-error">Cancelled</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-right">
+                <a href="{% url 'inventory:grn_detail' grn.pk %}" class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant" title="View">
+                  <span class="material-symbols-outlined text-[18px]">visibility</span>
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+      <div class="flex items-center justify-between px-4 py-3 border-t border-outline-variant">
+        <div class="text-xs text-on-surface-variant">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</div>
+        <div class="flex items-center gap-1">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn-secondary text-xs h-8 px-3">Previous</a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="btn-secondary text-xs h-8 px-3">Next</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="py-16 text-center">
+      <span class="material-symbols-outlined text-[48px] text-outline-variant">move_to_inbox</span>
+      <h3 class="mt-2 font-semibold">No GRNs yet</h3>
+      <p class="text-sm text-on-surface-variant">Start receiving stock from your suppliers.</p>
+      <a href="{% url 'inventory:grn_create' %}" class="btn-primary mt-4">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        New Stock Receiving
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

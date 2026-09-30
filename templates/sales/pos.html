@@ -1,0 +1,576 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}POS / Billing — Crown Pharmacy{% endblock %}
+{% block page_title %}POS / Billing{% endblock %}
+
+{% block extra_css %}
+<style>
+  .pos-container { height: calc(100vh - 3.5rem); }
+  .search-result:hover { background: #f2f3ff; }
+  .search-result.selected { background: #dae2fd; border-left: 4px solid #00685f; }
+  mark { background: #fff59d; padding: 0 2px; border-radius: 2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pos-container -m-6 flex">
+
+  <!-- ═══════════ LEFT: CATALOG + SEARCH ═══════════ -->
+  <section class="flex-1 flex flex-col bg-surface-bright overflow-hidden border-r border-outline-variant">
+
+    <!-- Search Bar -->
+    <div class="p-4 bg-surface-container-lowest border-b border-outline-variant">
+      <div class="relative">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-primary text-[22px]">barcode_scanner</span>
+        <input type="text" id="pos-search" autocomplete="off" autofocus
+               placeholder="Scan barcode or type product name, generic, SKU..."
+               class="w-full h-12 pl-12 pr-24 text-base font-mono bg-surface-container-lowest border-2 border-primary rounded-lg outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-outline/60">
+        <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-mono bg-surface-container px-2 py-1 rounded border border-outline-variant">
+          F4 / Enter
+        </span>
+      </div>
+
+      <div id="search-results" class="mt-2 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg overflow-hidden hidden max-h-[400px] overflow-y-auto"></div>
+    </div>
+
+    <!-- Quick Picks Grid -->
+    <div class="flex-1 overflow-y-auto p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold font-display text-on-surface-variant">Quick Picks — Fast Movers</h3>
+        <span class="text-xs text-outline">FEFO Enforced · Click to add</span>
+      </div>
+
+      {% if quick_picks %}
+        <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {% for p in quick_picks %}
+            <button type="button"
+                    class="quick-pick card p-3 text-left hover:border-primary/50 transition-all active:scale-[0.98] group"
+                    data-product-id="{{ p.id }}"
+                    data-product-name="{{ p.name|escapejs }}">
+              <div class="flex items-start justify-between mb-1">
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded
+                  {% if p.drug_schedule == 'OTC' %}bg-emerald-50 text-emerald-700
+                  {% elif p.drug_schedule == 'PRESCRIPTION_ONLY' %}bg-blue-50 text-blue-700
+                  {% else %}bg-purple-50 text-purple-700{% endif %}">
+                  {{ p.get_drug_schedule_display|truncatechars:12 }}
+                </span>
+                <span class="text-[10px] font-mono text-emerald-700 font-semibold">
+                  {{ p.total_stock }}
+                </span>
+              </div>
+              <div class="text-sm font-semibold truncate group-hover:text-primary">{{ p.name }}</div>
+              <div class="text-[11px] text-on-surface-variant truncate">{{ p.generic_name|default:p.dosage_form }}</div>
+              <div class="mt-2 flex items-center justify-between">
+                <span class="font-mono text-sm font-bold text-on-surface">LKR {{ p.selling_price|floatformat:2 }}</span>
+                <span class="w-6 h-6 rounded bg-surface-container group-hover:bg-primary group-hover:text-white flex items-center justify-center transition">
+                  <span class="material-symbols-outlined text-[16px]">add</span>
+                </span>
+              </div>
+            </button>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="py-12 text-center">
+          <span class="material-symbols-outlined text-[48px] text-outline-variant">inventory_2</span>
+          <h3 class="mt-2 font-semibold">No products in stock yet</h3>
+          <p class="text-sm text-on-surface-variant mt-1">Receive stock first via the Inventory section.</p>
+          <a href="{% url 'inventory:grn_create' %}" class="btn-primary mt-4 inline-flex">
+            <span class="material-symbols-outlined text-[18px]">move_to_inbox</span>
+            Receive Stock
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ═══════════ RIGHT: CART + CHECKOUT ═══════════ -->
+  <aside class="w-[440px] flex flex-col bg-surface-container-lowest shadow-lg">
+
+    <!-- Cart Header -->
+    <div class="px-4 py-3 bg-surface-container-low border-b border-outline-variant flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary text-[22px]">shopping_cart_checkout</span>
+        <h3 class="font-semibold font-display">Current Bill</h3>
+        <span id="cart-count" class="px-2 py-0.5 bg-primary/10 text-primary text-xs font-bold rounded-full">0</span>
+      </div>
+      <button id="btn-clear-cart" class="text-red-600 text-xs font-semibold hover:underline flex items-center gap-1 disabled:opacity-40" disabled>
+        <span class="material-symbols-outlined text-[14px]">delete_sweep</span>
+        Clear
+      </button>
+    </div>
+
+    <!-- Cart Items -->
+    <div id="cart-items" class="flex-1 overflow-y-auto divide-y divide-outline-variant/60">
+      <div id="cart-empty" class="py-16 text-center text-on-surface-variant">
+        <span class="material-symbols-outlined text-[48px] text-outline-variant">shopping_cart</span>
+        <p class="text-sm mt-2">Cart is empty</p>
+        <p class="text-xs mt-1">Search or click a quick pick to add</p>
+      </div>
+    </div>
+
+    <!-- Customer Attach -->
+    <div class="px-4 py-3 border-t border-outline-variant bg-surface-container-low/40 space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
+          <span class="material-symbols-outlined text-[15px] text-primary">person</span>
+          Customer (optional)
+        </span>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <input type="text" id="customer-name" placeholder="Name" class="input-field text-xs h-8">
+        <input type="text" id="customer-mobile" placeholder="Mobile" class="input-field text-xs h-8 font-mono">
+      </div>
+      <input type="email" id="customer-email" placeholder="Email (for receipt)" class="input-field text-xs h-8">
+    </div>
+
+    <!-- Totals & Payment -->
+    <div class="p-4 border-t border-outline-variant bg-surface-container-lowest space-y-3">
+      <div class="space-y-1.5 text-sm">
+        <div class="flex justify-between text-on-surface-variant">
+          <span>Subtotal</span>
+          <span id="subtotal" class="font-mono font-medium text-on-surface">LKR 0.00</span>
+        </div>
+        <div class="flex justify-between text-on-surface-variant items-center">
+          <span>Discount (LKR)</span>
+          <input type="number" id="discount-input" min="0" step="0.01" value="0" class="w-24 h-7 px-2 text-right text-xs font-mono input-field">
+        </div>
+        <div class="pt-2 border-t border-outline-variant flex justify-between items-baseline">
+          <span class="font-semibold">Grand Total</span>
+          <span id="grand-total" class="font-mono text-lg font-bold text-primary">LKR 0.00</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-4 gap-1 p-1 bg-surface-container-low rounded-lg">
+        <button type="button" class="pay-method py-1.5 rounded text-xs font-semibold bg-surface-container-lowest text-primary shadow-sm" data-method="cash">
+          <span class="material-symbols-outlined text-[15px] block mx-auto">payments</span>
+          Cash
+        </button>
+        <button type="button" class="pay-method py-1.5 rounded text-xs font-medium text-on-surface-variant" data-method="card">
+          <span class="material-symbols-outlined text-[15px] block mx-auto">credit_card</span>
+          Card
+        </button>
+        <button type="button" class="pay-method py-1.5 rounded text-xs font-medium text-on-surface-variant" data-method="digital">
+          <span class="material-symbols-outlined text-[15px] block mx-auto">qr_code_2</span>
+          Digital
+        </button>
+        <button type="button" class="pay-method py-1.5 rounded text-xs font-medium text-on-surface-variant" data-method="insurance">
+          <span class="material-symbols-outlined text-[15px] block mx-auto">shield</span>
+          Insur.
+        </button>
+      </div>
+      <input type="hidden" id="payment-method" value="cash">
+
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-[11px] font-medium text-on-surface-variant mb-1">Amount Received</label>
+          <input type="number" id="amount-paid" step="0.01" min="0" placeholder="0.00"
+                 class="w-full h-8 px-2 text-sm font-mono font-bold input-field text-right">
+        </div>
+        <div>
+          <label class="block text-[11px] font-medium text-on-surface-variant mb-1">Change Due</label>
+          <div id="change-due" class="h-8 px-2 rounded-lg bg-emerald-50 border border-emerald-300 flex items-center justify-end font-mono font-bold text-emerald-800 text-sm">
+            LKR 0.00
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-checkout" disabled
+              class="w-full h-12 bg-primary hover:bg-primary-container disabled:opacity-40 disabled:cursor-not-allowed text-on-primary font-bold rounded-lg shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined text-[22px]">check_circle</span>
+        <span>Complete Sale</span>
+        <span class="text-[11px] font-mono bg-white/20 px-1.5 py-0.5 rounded">F8</span>
+      </button>
+    </div>
+  </aside>
+</div>
+
+<!-- Success Modal -->
+<div id="success-modal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="bg-surface-container-lowest rounded-xl shadow-2xl max-w-md w-full p-6">
+      <div class="text-center">
+        <div class="w-16 h-16 rounded-full bg-emerald-100 mx-auto flex items-center justify-center">
+          <span class="material-symbols-outlined text-[32px] text-emerald-600">check_circle</span>
+        </div>
+        <h2 class="text-xl font-bold font-display mt-4">Sale Complete!</h2>
+        <p id="success-invoice" class="text-sm text-on-surface-variant mt-1 font-mono"></p>
+        <p id="success-total" class="text-lg font-bold font-mono text-primary mt-2"></p>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mt-6">
+        <button onclick="printInvoice()" class="btn-secondary justify-center">
+          <span class="material-symbols-outlined text-[18px]">print</span>
+          Print
+        </button>
+        <button onclick="newSale()" class="btn-primary justify-center">
+          <span class="material-symbols-outlined text-[18px]">add_circle</span>
+          New Sale
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ══════════════════════════════════════════════════════════
+// CART STATE
+// ══════════════════════════════════════════════════════════
+const cart = {
+  items: [],
+  paymentMethod: 'cash',
+  discountAmount: 0,
+};
+
+// ══════════════════════════════════════════════════════════
+// SEARCH
+// ══════════════════════════════════════════════════════════
+const searchInput = document.getElementById('pos-search');
+const searchResults = document.getElementById('search-results');
+let searchTimeout = null;
+let selectedIndex = -1;
+
+searchInput.addEventListener('input', (e) => {
+  const q = e.target.value.trim();
+  clearTimeout(searchTimeout);
+  if (q.length < 2) {
+    searchResults.classList.add('hidden');
+    return;
+  }
+  searchTimeout = setTimeout(() => doSearch(q), 200);
+});
+
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { searchResults.classList.add('hidden'); }
+  if (e.key === 'Enter' && selectedIndex >= 0) {
+    e.preventDefault();
+    const items = searchResults.querySelectorAll('.search-result');
+    if (items[selectedIndex]) items[selectedIndex].click();
+  }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    selectedIndex = Math.min(selectedIndex + 1, searchResults.querySelectorAll('.search-result').length - 1);
+    updateSelection();
+  }
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    selectedIndex = Math.max(selectedIndex - 1, 0);
+    updateSelection();
+  }
+});
+
+function updateSelection() {
+  const items = searchResults.querySelectorAll('.search-result');
+  items.forEach((el, i) => el.classList.toggle('selected', i === selectedIndex));
+  if (items[selectedIndex]) items[selectedIndex].scrollIntoView({ block: 'nearest' });
+}
+
+async function doSearch(q) {
+  try {
+    const res = await fetch(`/sales/api/search/?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+
+    if (!data.results || data.results.length === 0) {
+      searchResults.innerHTML = `<div class="p-4 text-center text-sm text-on-surface-variant">No matches for "<strong>${q}</strong>"</div>`;
+      searchResults.classList.remove('hidden');
+      selectedIndex = -1;
+      return;
+    }
+
+    searchResults.innerHTML = data.results.map((p, idx) => {
+      const expiryBadge = p.expiry_status
+        ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+            p.expiry_status === 'critical_30' ? 'bg-amber-50 border border-amber-200 text-amber-800' :
+            p.expiry_status === 'warning_90' ? 'bg-blue-50 border border-blue-200 text-blue-700' :
+            'bg-emerald-50 border border-emerald-200 text-emerald-800'
+          }">${p.days_until_expiry}d · ${p.batch_number}</span>`
+        : '<span class="text-[10px] text-red-600 font-semibold">OUT OF STOCK</span>';
+
+      return `
+        <button type="button"
+                class="search-result w-full text-left p-3 hover:bg-surface-container/60 flex items-center justify-between border-b border-outline-variant/40 last:border-0"
+                data-index="${idx}"
+                data-product='${JSON.stringify(p).replace(/'/g, "&#39;")}'>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-sm truncate">${highlight(p.name, q)}</div>
+            <div class="text-[11px] text-on-surface-variant truncate">${p.generic_name || ''} · SKU: ${p.sku}</div>
+            <div class="mt-1 flex items-center gap-2 text-[11px]">
+              <span class="text-emerald-700 font-mono font-semibold">${p.total_stock} ${p.unit_type}</span>
+              ${expiryBadge}
+            </div>
+          </div>
+          <div class="text-right ml-3 shrink-0">
+            <div class="font-mono font-bold text-sm">LKR ${p.selling_price.toFixed(2)}</div>
+            <div class="text-[10px] text-primary mt-0.5">Add +</div>
+          </div>
+        </button>
+      `;
+    }).join('');
+
+    searchResults.classList.remove('hidden');
+    selectedIndex = 0;
+    updateSelection();
+
+    searchResults.querySelectorAll('.search-result').forEach((el) => {
+      el.addEventListener('click', () => {
+        const p = JSON.parse(el.dataset.product);
+        addToCart(p);
+      });
+    });
+  } catch (err) {
+    console.error('Search error:', err);
+  }
+}
+
+function highlight(text, q) {
+  if (!q) return text;
+  const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return text.replace(regex, '<mark>$1</mark>');
+}
+
+// ══════════════════════════════════════════════════════════
+// CART OPERATIONS
+// ══════════════════════════════════════════════════════════
+function addToCart(product) {
+  if (!product.batch_id) {
+    showToast('No valid batch available', 'error');
+    return;
+  }
+  const existing = cart.items.find(i => i.productId === product.id);
+  if (existing) {
+    existing.quantity += 1;
+    if (existing.quantity > product.total_stock) {
+      existing.quantity = product.total_stock;
+      showToast('Maximum available stock reached', 'warning');
+    }
+  } else {
+    cart.items.push({
+      productId: product.id,
+      batchId: product.batch_id,
+      name: product.name,
+      batchNumber: product.batch_number,
+      expiryDate: product.expiry_date,
+      daysUntilExpiry: product.days_until_expiry,
+      quantity: 1,
+      unitPrice: product.selling_price,
+      maxStock: product.total_stock,
+    });
+  }
+  renderCart();
+  searchInput.value = '';
+  searchResults.classList.add('hidden');
+  searchInput.focus();
+}
+
+function updateQty(productId, delta) {
+  const item = cart.items.find(i => i.productId === productId);
+  if (!item) return;
+  item.quantity = Math.max(1, Math.min(item.quantity + delta, item.maxStock));
+  renderCart();
+}
+
+function removeItem(productId) {
+  cart.items = cart.items.filter(i => i.productId !== productId);
+  renderCart();
+}
+
+function renderCart() {
+  const container = document.getElementById('cart-items');
+  const empty = document.getElementById('cart-empty');
+  const count = document.getElementById('cart-count');
+
+  if (cart.items.length === 0) {
+    empty.classList.remove('hidden');
+    container.querySelectorAll('.cart-row').forEach(el => el.remove());
+    count.textContent = '0';
+    updateTotals();
+    document.getElementById('btn-checkout').disabled = true;
+    document.getElementById('btn-clear-cart').disabled = true;
+    return;
+  }
+
+  empty.classList.add('hidden');
+  count.textContent = cart.items.length;
+  document.getElementById('btn-checkout').disabled = false;
+  document.getElementById('btn-clear-cart').disabled = false;
+
+  container.querySelectorAll('.cart-row').forEach(el => el.remove());
+
+  cart.items.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'cart-row p-3 hover:bg-surface-container-low/40 transition';
+    row.innerHTML = `
+      <div class="flex items-start justify-between">
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-sm truncate">${item.name}</div>
+          <div class="text-[11px] font-mono text-on-surface-variant mt-0.5">Batch: ${item.batchNumber} · Exp: ${item.expiryDate}</div>
+        </div>
+        <button onclick="removeItem(${item.productId})" class="p-1 text-outline hover:text-red-600 transition">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+      <div class="flex items-center justify-between mt-2">
+        <div class="flex items-center border border-outline-variant rounded bg-surface-container-lowest">
+          <button onclick="updateQty(${item.productId}, -1)" class="w-7 h-7 flex items-center justify-center hover:bg-surface-container font-bold">−</button>
+          <span class="w-9 text-center font-mono text-xs font-bold">${item.quantity}</span>
+          <button onclick="updateQty(${item.productId}, 1)" class="w-7 h-7 flex items-center justify-center hover:bg-surface-container font-bold">+</button>
+        </div>
+        <div class="text-right">
+          <div class="font-mono font-bold text-sm">LKR ${(item.unitPrice * item.quantity).toFixed(2)}</div>
+          <div class="text-[10px] text-on-surface-variant">@ ${item.unitPrice.toFixed(2)}</div>
+        </div>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+
+  updateTotals();
+}
+
+function updateTotals() {
+  const subtotal = cart.items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+  const discount = parseFloat(document.getElementById('discount-input').value) || 0;
+  const total = Math.max(0, subtotal - discount);
+  cart.discountAmount = discount;
+  document.getElementById('subtotal').textContent = `LKR ${subtotal.toFixed(2)}`;
+  document.getElementById('grand-total').textContent = `LKR ${total.toFixed(2)}`;
+  updateChange();
+}
+
+function updateChange() {
+  const total = cart.items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0)
+    - (parseFloat(document.getElementById('discount-input').value) || 0);
+  const paid = parseFloat(document.getElementById('amount-paid').value) || 0;
+  const change = Math.max(0, paid - total);
+  document.getElementById('change-due').textContent = `LKR ${change.toFixed(2)}`;
+}
+
+// ══════════════════════════════════════════════════════════
+// EVENT WIRING
+// ══════════════════════════════════════════════════════════
+document.getElementById('discount-input').addEventListener('input', updateTotals);
+document.getElementById('amount-paid').addEventListener('input', updateChange);
+
+document.getElementById('btn-clear-cart').addEventListener('click', () => {
+  if (cart.items.length && confirm('Clear the entire cart?')) {
+    cart.items = [];
+    renderCart();
+  }
+});
+
+document.querySelectorAll('.pay-method').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pay-method').forEach(b => {
+      b.className = 'pay-method py-1.5 rounded text-xs font-medium text-on-surface-variant';
+    });
+    btn.className = 'pay-method py-1.5 rounded text-xs font-semibold bg-surface-container-lowest text-primary shadow-sm';
+    cart.paymentMethod = btn.dataset.method;
+  });
+});
+
+// Quick-pick buttons: populate search bar with product name
+document.querySelectorAll('.quick-pick').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const name = btn.dataset.productName || '';
+    if (!name) return;
+    searchInput.value = name;
+    searchInput.dispatchEvent(new Event('input'));
+    setTimeout(() => searchInput.focus(), 100);
+  });
+});
+
+// ══════════════════════════════════════════════════════════
+// CHECKOUT
+// ══════════════════════════════════════════════════════════
+document.getElementById('btn-checkout').addEventListener('click', doCheckout);
+
+async function doCheckout() {
+  if (cart.items.length === 0) return;
+  const btn = document.getElementById('btn-checkout');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span> Processing...';
+
+  const payload = {
+    items: cart.items.map(i => ({ product_id: i.productId, quantity: i.quantity })),
+    customer: {
+      name: document.getElementById('customer-name').value.trim(),
+      mobile: document.getElementById('customer-mobile').value.trim(),
+      email: document.getElementById('customer-email').value.trim(),
+    },
+    payment_method: cart.paymentMethod,
+    amount_paid: parseFloat(document.getElementById('amount-paid').value) || 0,
+    discount_amount: cart.discountAmount,
+  };
+
+  try {
+    const res = await fetch('/sales/api/checkout/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken'),
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      showToast(data.error || 'Checkout failed', 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined">check_circle</span><span>Complete Sale</span>';
+      return;
+    }
+
+    document.getElementById('success-invoice').textContent = data.invoice_number;
+    document.getElementById('success-total').textContent = `LKR ${data.grand_total.toFixed(2)}`;
+    document.getElementById('success-modal').classList.remove('hidden');
+    document.getElementById('success-modal').dataset.saleId = data.sale_id;
+    cart.items = [];
+    renderCart();
+  } catch (err) {
+    showToast('Network error. Check console.', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined">check_circle</span><span>Complete Sale</span>';
+  }
+}
+
+function printInvoice() {
+  const saleId = document.getElementById('success-modal').dataset.saleId;
+  window.open(`/sales/${saleId}/invoice/?print=1`, '_blank');
+}
+
+function newSale() {
+  location.reload();
+}
+
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return '';
+}
+
+function showToast(msg, type = 'info') {
+  const toast = document.createElement('div');
+  const colors = {
+    success: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+    error: 'bg-red-50 border-red-200 text-red-800',
+    warning: 'bg-amber-50 border-amber-200 text-amber-800',
+    info: 'bg-surface-container border-outline-variant text-on-surface',
+  };
+  toast.className = `fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg border shadow-lg ${colors[type]}`;
+  toast.innerHTML = `<span class="material-symbols-outlined text-[18px]">info</span><span class="text-sm">${msg}</span>`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'F2') { e.preventDefault(); if (cart.items.length && confirm('Start new sale?')) { cart.items = []; renderCart(); } searchInput.focus(); }
+  if (e.key === 'F4') { e.preventDefault(); searchInput.focus(); searchInput.select(); }
+  if (e.key === 'F8') { e.preventDefault(); if (cart.items.length) doCheckout(); }
+});
+</script>
+{% endblock %}

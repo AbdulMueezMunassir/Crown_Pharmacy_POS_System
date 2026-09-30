@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory Overview — Crown Pharmacy{% endblock %}
+{% block page_title %}Inventory &amp; Stock{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold font-display">Inventory Overview</h1>
+    <p class="text-sm text-on-surface-variant mt-0.5">Real-time stock valuation and FEFO monitoring.</p>
+  </div>
+  <a href="{% url 'inventory:grn_create' %}" class="btn-primary">
+    <span class="material-symbols-outlined text-[18px]">move_to_inbox</span>
+    Receive Stock
+  </a>
+</div>
+
+<!-- KPI Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
+  <div class="card p-4">
+    <div class="flex items-center justify-between text-outline text-[11px] font-semibold uppercase tracking-wider">
+      <span>Total Value</span>
+      <span class="material-symbols-outlined text-[18px] text-primary">account_balance_wallet</span>
+    </div>
+    <div class="mt-2 text-lg font-bold font-mono">LKR {{ total_value|floatformat:2 }}</div>
+    <div class="mt-1 text-[11px] text-on-surface-variant">Cost basis</div>
+  </div>
+
+  <div class="card p-4">
+    <div class="flex items-center justify-between text-outline text-[11px] font-semibold uppercase tracking-wider">
+      <span>Total Units</span>
+      <span class="material-symbols-outlined text-[18px] text-secondary">inventory_2</span>
+    </div>
+    <div class="mt-2 text-lg font-bold font-mono">{{ total_units }}</div>
+    <div class="mt-1 text-[11px] text-on-surface-variant">Across {{ total_batches }} batches</div>
+  </div>
+
+  <div class="card p-4 border-red-200">
+    <div class="flex items-center justify-between text-red-600 text-[11px] font-semibold uppercase tracking-wider">
+      <span>Low Stock</span>
+      <span class="material-symbols-outlined text-[18px]">warning</span>
+    </div>
+    <div class="mt-2 text-lg font-bold font-mono text-red-600">{{ low_stock_products }}</div>
+    <div class="mt-1 text-[11px] text-red-700">Below min level</div>
+  </div>
+
+  <div class="card p-4 border-red-200">
+    <div class="flex items-center justify-between text-red-600 text-[11px] font-semibold uppercase tracking-wider">
+      <span>Out of Stock</span>
+      <span class="material-symbols-outlined text-[18px]">block</span>
+    </div>
+    <div class="mt-2 text-lg font-bold font-mono text-red-600">{{ out_of_stock }}</div>
+    <div class="mt-1 text-[11px] text-red-700">Zero balance</div>
+  </div>
+
+  <div class="card p-4 border-amber-200">
+    <div class="flex items-center justify-between text-amber-700 text-[11px] font-semibold uppercase tracking-wider">
+      <span>Expiring &lt; 30d</span>
+      <span class="material-symbols-outlined text-[18px]">hourglass_top</span>
+    </div>
+    <div class="mt-2 text-lg font-bold font-mono text-amber-700">{{ expiring_30 }}</div>
+    <div class="mt-1 text-[11px] text-amber-700">Critical</div>
+  </div>
+
+  <div class="card p-4 border-red-200 bg-red-50/30">
+    <div class="flex items-center justify-between text-red-700 text-[11px] font-semibold uppercase tracking-wider">
+      <span>Expired</span>
+      <span class="material-symbols-outlined text-[18px]">event_busy</span>
+    </div>
+    <div class="mt-2 text-lg font-bold font-mono text-red-700">{{ expired }}</div>
+    <div class="mt-1 text-[11px] text-red-700">Quarantine required</div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+  <a href="{% url 'inventory:batch_list' %}" class="card p-5 hover:border-primary/40 transition group">
+    <div class="flex items-center justify-between">
+      <div>
+        <div class="text-sm font-semibold font-display">All Batches</div>
+        <div class="text-xs text-on-surface-variant mt-0.5">FEFO-sorted batch ledger</div>
+      </div>
+      <span class="material-symbols-outlined text-primary text-[28px] group-hover:translate-x-1 transition">arrow_forward</span>
+    </div>
+  </a>
+
+  <a href="{% url 'inventory:batch_list' %}?expiry=critical" class="card p-5 hover:border-amber-400 transition group">
+    <div class="flex items-center justify-between">
+      <div>
+        <div class="text-sm font-semibold font-display">Expiring Batches</div>
+        <div class="text-xs text-on-surface-variant mt-0.5">Batches expiring within 30 days</div>
+      </div>
+      <span class="material-symbols-outlined text-amber-600 text-[28px] group-hover:translate-x-1 transition">arrow_forward</span>
+    </div>
+  </a>
+
+  <a href="{% url 'inventory:grn_list' %}" class="card p-5 hover:border-primary/40 transition group">
+    <div class="flex items-center justify-between">
+      <div>
+        <div class="text-sm font-semibold font-display">Stock Receiving Log</div>
+        <div class="text-xs text-on-surface-variant mt-0.5">GRN history &amp; purchase inward</div>
+      </div>
+      <span class="material-symbols-outlined text-primary text-[28px] group-hover:translate-x-1 transition">arrow_forward</span>
+    </div>
+  </a>
+</div>
+
+{% endblock %}

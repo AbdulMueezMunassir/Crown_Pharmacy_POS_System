@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}Batches — Crown Pharmacy{% endblock %}
+{% block page_title %}Batches &amp; FEFO{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="flex items-center justify-between mb-4">
+  <div>
+    <h1 class="text-2xl font-bold font-display">Batch Management</h1>
+    <p class="text-sm text-on-surface-variant">{{ total_count }} batches (FEFO-sorted by earliest expiry)</p>
+  </div>
+  <a href="{% url 'inventory:overview' %}" class="btn-secondary">
+    <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+    Back to Overview
+  </a>
+</div>
+
+<!-- Filters -->
+<div class="card p-3 mb-4">
+  <form method="get" class="flex items-center gap-2 flex-wrap">
+    <div class="relative flex-1 min-w-[240px]">
+      <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+      <input type="text" name="q" value="{{ search }}" placeholder="Search batch #, product, SKU, GRN..." class="input-field pl-9">
+    </div>
+
+    <select name="expiry" class="input-field max-w-[200px]">
+      <option value="">All Expiry Statuses</option>
+      <option value="expired" {% if expiry_filter == 'expired' %}selected{% endif %}>Expired</option>
+      <option value="critical" {% if expiry_filter == 'critical' %}selected{% endif %}>Critical (&lt; 30 days)</option>
+      <option value="warning" {% if expiry_filter == 'warning' %}selected{% endif %}>Warning (31-90 days)</option>
+      <option value="safe" {% if expiry_filter == 'safe' %}selected{% endif %}>Safe (&gt; 90 days)</option>
+    </select>
+
+    <select name="status" class="input-field max-w-[180px]">
+      <option value="">All Stock Levels</option>
+      <option value="available" {% if status_filter == 'available' %}selected{% endif %}>Has Stock</option>
+      <option value="empty" {% if status_filter == 'empty' %}selected{% endif %}>Empty</option>
+    </select>
+
+    <button type="submit" class="btn-secondary">
+      <span class="material-symbols-outlined text-[18px]">filter_alt</span>
+      Filter
+    </button>
+
+    {% if search or expiry_filter or status_filter %}
+      <a href="{% url 'inventory:batch_list' %}" class="btn-secondary">
+        <span class="material-symbols-outlined text-[18px]">close</span>
+        Clear
+      </a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Batches Table -->
+<div class="card overflow-hidden">
+  {% if page_obj %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-surface-container-low text-on-surface-variant">
+          <tr>
+            <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Batch #</th>
+            <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Product</th>
+            <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Supplier</th>
+            <th class="text-right px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Available</th>
+            <th class="text-right px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Cost</th>
+            <th class="text-right px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Selling</th>
+            <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Expiry</th>
+            <th class="text-center px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold">Status</th>
+            <th class="text-right px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant">
+          {% for batch in page_obj %}
+            <tr class="hover:bg-surface-container-low/60 transition
+              {% if batch.expiry_status == 'expired' %}bg-red-50/30
+              {% elif batch.expiry_status == 'critical_30' %}bg-amber-50/20{% endif %}">
+              <td class="px-4 py-3 font-mono text-xs font-medium">{{ batch.batch_number }}</td>
+              <td class="px-4 py-3">
+                <a href="{% url 'products:detail' batch.product.pk %}" class="font-semibold hover:text-primary">
+                  {{ batch.product.name }}
+                </a>
+                <div class="text-[11px] text-on-surface-variant font-mono">{{ batch.product.sku }}</div>
+              </td>
+              <td class="px-4 py-3 text-on-surface-variant text-xs">{{ batch.supplier.name|default:"—" }}</td>
+              <td class="px-4 py-3 text-right font-mono font-semibold">{{ batch.quantity_available }}</td>
+              <td class="px-4 py-3 text-right font-mono text-xs">{{ batch.cost_price|floatformat:2 }}</td>
+              <td class="px-4 py-3 text-right font-mono text-xs">{{ batch.selling_price|floatformat:2 }}</td>
+              <td class="px-4 py-3 font-mono text-xs">
+                {{ batch.expiry_date|date:"d M Y" }}
+                <div class="text-[10px] text-on-surface-variant">
+                  {% if batch.days_until_expiry < 0 %}
+                    Expired {{ batch.days_until_expiry }} days ago
+                  {% else %}
+                    {{ batch.days_until_expiry }} days left
+                  {% endif %}
+                </div>
+              </td>
+              <td class="px-4 py-3 text-center">
+                {% if batch.expiry_status == 'expired' %}
+                  <span class="badge-error">
+                    <span class="material-symbols-outlined text-[12px]">event_busy</span>
+                    Expired
+                  </span>
+                {% elif batch.expiry_status == 'critical_30' %}
+                  <span class="badge-warning">
+                    <span class="material-symbols-outlined text-[12px]">warning</span>
+                    {{ batch.days_until_expiry }}d
+                  </span>
+                {% elif batch.expiry_status == 'warning_90' %}
+                  <span class="badge-info">{{ batch.days_until_expiry }}d</span>
+                {% else %}
+                  <span class="badge-success">
+                    <span class="material-symbols-outlined text-[12px]">check</span>
+                    Safe
+                  </span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-right">
+                <a href="{% url 'inventory:batch_detail' batch.pk %}" class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant" title="View Batch">
+                  <span class="material-symbols-outlined text-[18px]">visibility</span>
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+      <div class="flex items-center justify-between px-4 py-3 border-t border-outline-variant">
+        <div class="text-xs text-on-surface-variant">
+          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </div>
+        <div class="flex items-center gap-1">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% if expiry_filter %}&expiry={{ expiry_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="btn-secondary text-xs h-8 px-3">Previous</a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% if expiry_filter %}&expiry={{ expiry_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="btn-secondary text-xs h-8 px-3">Next</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+  {% else %}
+    <div class="py-16 text-center">
+      <span class="material-symbols-outlined text-[48px] text-outline-variant">inventory_2</span>
+      <h3 class="mt-2 font-semibold">No batches found</h3>
+      <p class="text-sm text-on-surface-variant mt-1">
+        {% if search or expiry_filter or status_filter %}Try clearing filters.{% else %}Receive stock to create your first batch.{% endif %}
+      </p>
+      <a href="{% url 'inventory:grn_create' %}" class="btn-primary mt-4">
+        <span class="material-symbols-outlined text-[18px]">move_to_inbox</span>
+        Receive First Stock
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

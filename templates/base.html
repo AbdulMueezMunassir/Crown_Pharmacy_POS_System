@@ -70,12 +70,14 @@
       </button>
 
       <nav class="space-y-0.5">
+        {# ── Dashboard ────────────────────────────────────── #}
         <a href="{% url 'dashboard:home' %}" class="nav-link {% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}">
           <span class="material-symbols-outlined text-[19px]">dashboard</span>
           <span>Dashboard</span>
         </a>
 
         {% if user.role == 'admin' or user.role == 'pharmacist' %}
+          {# ── Products + Categories ─────────────────────── #}
           <a href="{% url 'products:list' %}" class="nav-link {% if request.resolver_match.namespace == 'products' and 'category' not in request.path %}active{% endif %}">
             <span class="material-symbols-outlined text-[19px]">medication</span>
             <span>Products</span>
@@ -84,45 +86,71 @@
             <span class="material-symbols-outlined text-[17px] text-outline">subdirectory_arrow_right</span>
             <span class="text-xs">Categories</span>
           </a>
-          <!-- ... keep the rest: Inventory, Stock Receiving, Batches -->
+
+          {# ── Inventory & Stock ───────────────────────────── #}
+          <a href="{% url 'inventory:overview' %}" class="nav-link {% if request.resolver_match.url_name == 'overview' %}active{% endif %}">
+            <span class="material-symbols-outlined text-[19px]">inventory_2</span>
+            <span>Inventory &amp; Stock</span>
+          </a>
+
+          {# ── Stock Receiving (GRN) ──────────────────────── #}
+          <a href="{% url 'inventory:grn_list' %}" class="nav-link {% if 'grn' in request.resolver_match.url_name %}active{% endif %}">
+            <span class="material-symbols-outlined text-[19px]">move_to_inbox</span>
+            <span>Stock Receiving</span>
+          </a>
+
+          {# ── Batches & FEFO ──────────────────────────────── #}
+          <a href="{% url 'inventory:batch_list' %}" class="nav-link {% if 'batch' in request.resolver_match.url_name %}active{% endif %}">
+            <span class="material-symbols-outlined text-[19px]">hourglass_bottom</span>
+            <span>Batches &amp; FEFO</span>
+          </a>
         {% endif %}
 
-        <a href="#" class="nav-link">
+        {# ── POS / Billing ──────────────────────────────────── #}
+        <a href="{% url 'sales:pos' %}" class="nav-link {% if request.resolver_match.url_name == 'pos' %}active{% endif %}">
           <span class="material-symbols-outlined text-[19px]">point_of_sale</span>
           <span>POS / Billing</span>
         </a>
-        <a href="#" class="nav-link">
+        <a href="{% url 'sales:list' %}" class="nav-link {% if request.resolver_match.url_name == 'list' and request.resolver_match.namespace == 'sales' %}active{% endif %}">
           <span class="material-symbols-outlined text-[19px]">receipt_long</span>
           <span>Sales History</span>
         </a>
+
+        {# ── Returns ─────────────────────────────────────────── #}
         <a href="#" class="nav-link">
           <span class="material-symbols-outlined text-[19px]">assignment_return</span>
           <span>Returns</span>
         </a>
 
         {% if user.role == 'admin' %}
+          {# ── Reports ─────────────────────────────────────── #}
           <a href="#" class="nav-link">
             <span class="material-symbols-outlined text-[19px]">monitoring</span>
             <span>Reports &amp; Analytics</span>
           </a>
         {% endif %}
 
+        {# ── Customers ───────────────────────────────────────── #}
         <a href="#" class="nav-link">
           <span class="material-symbols-outlined text-[19px]">groups</span>
           <span>Customers</span>
         </a>
 
         {% if user.role == 'admin' %}
+          {# ── Salespersons ──────────────────────────────────── #}
           <a href="#" class="nav-link">
             <span class="material-symbols-outlined text-[19px]">badge</span>
             <span>Salespersons</span>
           </a>
+
+          {# ── Suppliers ─────────────────────────────────────── #}
           <a href="#" class="nav-link">
             <span class="material-symbols-outlined text-[19px]">local_shipping</span>
             <span>Suppliers</span>
           </a>
         {% endif %}
 
+        {# ── Alerts ──────────────────────────────────────────── #}
         <a href="#" class="nav-link justify-between">
           <span class="flex items-center gap-3">
             <span class="material-symbols-outlined text-[19px]">notifications_active</span>
@@ -132,6 +160,7 @@
         </a>
 
         {% if user.role == 'admin' %}
+          {# ── Settings ──────────────────────────────────────── #}
           <a href="#" class="nav-link">
             <span class="material-symbols-outlined text-[19px]">settings</span>
             <span>Settings</span>

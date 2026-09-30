@@ -10,7 +10,8 @@ urlpatterns = [
     path('accounts/', include('accounts.urls', namespace='accounts')),
     path('dashboard/', include('dashboard.urls', namespace='dashboard')),
     path('products/', include('products.urls', namespace='products')),
-    # Redirect root to dashboard
+    path('inventory/', include('inventory.urls', namespace='inventory')),
+    path('sales/', include('sales.urls', namespace='sales')),  # ← NEW
     path('', RedirectView.as_view(pattern_name='dashboard:home', permanent=False)),
 ]
 
